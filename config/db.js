@@ -1,20 +1,37 @@
 import pkg from "pg";
 const { Pool } = pkg;
 
-// 🔍 Debug (will print in Render logs)
-console.log("DB URL:", process.env.DATABASE_URL ? "FOUND ✅" : "MISSING ❌");
+// 🔍 Debug (safe log)
+if (!process.env.DATABASE_URL) {
+  console.error("❌ DATABASE_URL is MISSING");
+} else {
+  console.log("✅ DATABASE_URL loaded");
+}
 
-// 🚀 Create Pool using Render DATABASE_URL
+// 🚀 Create single pool instance
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+
+  // 🔥 REQUIRED for Render PostgreSQL
   ssl: {
-    rejectUnauthorized: false, // required for Render Postgres
+    rejectUnauthorized: false,
   },
+
+  // optional but good
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
-// ✅ Optional: test connection on startup
-pool.connect()
-  .then(() => console.log("✅ PostgreSQL Connected"))
-  .catch((err) => console.error("❌ DB Connection Error:", err));
+// ✅ Test connection once (no leak)
+(async () => {
+  try {
+    const client = await pool.connect();
+    console.log("✅ PostgreSQL Connected");
+    client.release();
+  } catch (err) {
+    console.error("❌ DB Connection Error:", err.message);
+  }
+})();
 
 export default pool;
