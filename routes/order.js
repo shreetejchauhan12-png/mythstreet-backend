@@ -209,10 +209,9 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ✅ GET ALL ORDERS (NO AUTH TEMP FIX)
+// ✅ GET ALL ORDERS (FINAL CLEAN)
 router.get("/", async (req, res) => {
   try {
-
     const result = await pool.query(
       `SELECT * FROM orders ORDER BY id DESC`
     );
