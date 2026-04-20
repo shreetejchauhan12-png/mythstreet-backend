@@ -212,51 +212,40 @@ router.get("/:id", async (req, res) => {
 // ✅ GET ALL ORDERS
 router.get("/", auth, async (req, res) => {
   try {
-    // 🔥 ADMIN: get all orders
-if (req.user.email === "admin@mythstreet.com") {
-  const ordersResult = await pool.query(
-    `SELECT * FROM orders ORDER BY id DESC`
-  );
 
-  const adminOrders = ordersResult.rows;
+    // 🔥 ADMIN → get all orders
+    if (req.user.email === "admin@mythstreet.com") {
 
-  for (let order of adminOrders) {
-    const itemsResult = await pool.query(
-      `SELECT * FROM order_items WHERE order_id = $1`,
-      [order.id]
+      const result = await pool.query(
+        `SELECT * FROM orders ORDER BY id DESC`
+      );
+
+      const orders = result.rows;
+
+      for (let order of orders) {
+        const itemsResult = await pool.query(
+          `SELECT * FROM order_items WHERE order_id = $1`,
+          [order.id]
+        );
+        order.items = itemsResult.rows;
+      }
+
+      return res.json({ orders });
+    }
+
+    // 👤 USER → only own orders
+    const result = await pool.query(
+      `SELECT * FROM orders WHERE user_id = $1 ORDER BY id DESC`,
+      [req.user.id]
     );
-    order.items = itemsResult.rows;
-  }
 
-  return res.json({ orders: adminOrders });
-}
+    const orders = result.rows;
 
-// 👤 USER: get own orders
-const ordersResult = await pool.query(
-  `SELECT * FROM orders WHERE user_id = $1 ORDER BY id DESC`,
-  [req.user.id]
-);
-
-const adminOrders = ordersResult.rows;
-
-for (let order of adminOrders) {
-  const itemsResult = await pool.query(
-    `SELECT * FROM order_items WHERE order_id = $1`,
-    [order.id]
-  );
-  order.items = itemsResult.rows;
-}
-
-res.json({ orders });
-
-    const adminOrders = ordersResult.rows;
-
-    for (let order of adminOrders) {
+    for (let order of orders) {
       const itemsResult = await pool.query(
         `SELECT * FROM order_items WHERE order_id = $1`,
         [order.id]
       );
-
       order.items = itemsResult.rows;
     }
 
