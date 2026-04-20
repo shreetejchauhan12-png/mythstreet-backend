@@ -1,23 +1,26 @@
+import "dotenv/config"; // ✅ MUST be first line
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import pool from "./config/db.js";
 
 import productsRoutes from "./routes/products.js";
 import orderRoutes from "./routes/order.js";
-import authRoutes from "./routes/auth.js"; // ✅ NEW
-
-dotenv.config({ path: "./.env" });
+import authRoutes from "./routes/auth.js";
 
 const app = express();
 
-// ✅ DEBUG ENV
-console.log("ENV CHECK:", process.env.RAZORPAY_KEY_ID);
+// 🔥 DEBUG ENV (VERY IMPORTANT)
+console.log(
+  "DATABASE_URL:",
+  process.env.DATABASE_URL ? "FOUND ✅" : "MISSING ❌"
+);
+console.log("RAZORPAY:", process.env.RAZORPAY_KEY_ID);
 
 // ✅ MIDDLEWARE
 app.use(
   cors({
-    origin: "*", // 🔥 allow all (dev mode)
+    origin: "*",
   })
 );
 
@@ -26,14 +29,14 @@ app.use(express.json());
 // 🔥 ROUTES
 app.use("/api/products", productsRoutes);
 app.use("/api/order", orderRoutes);
-app.use("/api/auth", authRoutes); // ✅ NEW
+app.use("/api/auth", authRoutes);
 
 // ✅ HEALTH CHECK
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ DB TEST
+// ✅ DB TEST ROUTE
 app.get("/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
