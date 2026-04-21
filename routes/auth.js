@@ -32,21 +32,27 @@ router.post("/send-otp", async (req, res) => {
 
     console.log("📦 OTP stored in DB:", otp);
 
-    // 🔥 SEND OTP VIA MSG91 FLOW API
-    const response = await axios.post(
-      "https://control.msg91.com/api/v5/flow/",
+    // 🔥 SEND OTP VIA MSG91 SMS API
+const response = await axios.post(
+  "https://api.msg91.com/api/v2/sendsms",
+  {
+    sender: "MYTHSTREET", // must match your approved Sender ID
+    route: "4", // transactional route
+    country: "91",
+    sms: [
       {
-        template_id: "69e762869a0c34f9580785b9",
-        mobile: "91" + phone,
-        OTP: otp, // MUST match ##OTP## in template
+        message: `Your OTP for MythStreet is ${otp}. Do not share it.`,
+        to: [phone],
       },
-      {
-        headers: {
-          authkey: process.env.MSG91_AUTH_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    ],
+  },
+  {
+    headers: {
+      authkey: process.env.MSG91_AUTH_KEY,
+      "Content-Type": "application/json",
+    },
+  }
+);
 
     console.log("📲 OTP sent to:", phone);
     console.log("📡 MSG91 RESPONSE:", response.data);
