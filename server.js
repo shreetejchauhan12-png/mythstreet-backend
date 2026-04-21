@@ -1,4 +1,4 @@
-import "dotenv/config"; // ✅ MUST be first line
+import "dotenv/config"; // ✅ MUST be first
 
 import express from "express";
 import cors from "cors";
@@ -10,12 +10,26 @@ import authRoutes from "./routes/auth.js";
 
 const app = express();
 
-// 🔥 DEBUG ENV (VERY IMPORTANT)
+// 🔥 ENV DEBUG (VERY IMPORTANT)
 console.log(
   "DATABASE_URL:",
   process.env.DATABASE_URL ? "FOUND ✅" : "MISSING ❌"
 );
-console.log("RAZORPAY:", process.env.RAZORPAY_KEY_ID);
+
+console.log(
+  "RAZORPAY_KEY_ID:",
+  process.env.RAZORPAY_KEY_ID ? "FOUND ✅" : "MISSING ❌"
+);
+
+console.log(
+  "RESEND_API_KEY:",
+  process.env.RESEND_API_KEY ? "FOUND ✅" : "MISSING ❌"
+);
+
+// ❗ HARD FAIL IF RESEND MISSING (so you don’t debug blindly)
+if (!process.env.RESEND_API_KEY) {
+  console.error("❌ RESEND_API_KEY is missing in .env");
+}
 
 // ✅ MIDDLEWARE
 app.use(
@@ -36,7 +50,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ DB TEST ROUTE
+// ✅ DB TEST
 app.get("/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
