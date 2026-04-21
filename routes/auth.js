@@ -1,6 +1,7 @@
 import express from "express";
 import pool from "../config/db.js";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 
 const router = express.Router();
 
@@ -28,13 +29,31 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    console.log("🔥 OTP for", phone, "is:", otp);
+    // 🔥 SEND OTP VIA MSG91
+    await axios.post(
+      "https://control.msg91.com/api/v5/otp",
+      {
+        mobile: "91" + phone,
+        otp: otp,
+      },
+      {
+        headers: {
+          authkey: process.env.MSG91_AUTH_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("📲 OTP sent to", phone);
 
     res.json({ success: true });
 
   } catch (error) {
-    console.error("SEND OTP ERROR:", error);
-    res.status(500).json({ error: error.message });
+    console.error(
+      "SEND OTP ERROR:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({ error: "Failed to send OTP" });
   }
 });
 
@@ -60,28 +79,29 @@ router.post("/verify-otp", async (req, res) => {
     const user = result.rows[0];
 
     // ❌ INVALID OTP
-    // 🔥 SAFE OTP COMPARISON
-if (String(otp) !== String(user.otp)) {
-  return res.status(400).json({ error: "Invalid OTP" });
-}
+    if (String(otp) !== String(user.otp)) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
 
     // ❌ EXPIRED OTP
     if (!user.otp_expiry || new Date() > user.otp_expiry) {
       return res.status(400).json({ error: "OTP expired" });
     }
 
-    // 🔥 CLEAR OTP COMPLETELY
+    // 🔥 CLEAR OTP
     await pool.query(
-      `UPDATE users 
-       SET otp = NULL, otp_expiry = NULL 
-       WHERE phone = $1`,
+      `
+      UPDATE users 
+      SET otp = NULL, otp_expiry = NULL 
+      WHERE phone = $1
+      `,
       [phone]
     );
 
     // 🔥 GENERATE TOKEN
     const token = jwt.sign(
       { id: user.id, phone: user.phone },
-      "secret123",
+      process.env.JWT_SECRET || "secret123",
       { expiresIn: "7d" }
     );
 
@@ -96,7 +116,7 @@ if (String(otp) !== String(user.otp)) {
 
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to verify OTP" });
   }
 });
 
