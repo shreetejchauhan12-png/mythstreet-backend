@@ -28,8 +28,7 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    // 🔥 FOR NOW (IMPORTANT)
-    console.log("OTP for", phone, "is:", otp);
+    console.log("🔥 OTP for", phone, "is:", otp);
 
     res.json({ success: true });
 
@@ -45,6 +44,10 @@ router.post("/verify-otp", async (req, res) => {
   try {
     const { phone, otp } = req.body;
 
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Phone & OTP required" });
+    }
+
     const result = await pool.query(
       "SELECT * FROM users WHERE phone = $1",
       [phone]
@@ -56,23 +59,25 @@ router.post("/verify-otp", async (req, res) => {
 
     const user = result.rows[0];
 
-    // ❌ WRONG OTP
-    if (user.otp !== otp) {
+    // ❌ INVALID OTP
+    if (parseInt(otp) !== user.otp) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
-    // ❌ EXPIRED
-    if (new Date() > user.otp_expiry) {
+    // ❌ EXPIRED OTP
+    if (!user.otp_expiry || new Date() > user.otp_expiry) {
       return res.status(400).json({ error: "OTP expired" });
     }
 
-    // 🔥 CLEAR OTP
+    // 🔥 CLEAR OTP COMPLETELY
     await pool.query(
-      "UPDATE users SET otp = NULL WHERE phone = $1",
+      `UPDATE users 
+       SET otp = NULL, otp_expiry = NULL 
+       WHERE phone = $1`,
       [phone]
     );
 
-    // 🔥 TOKEN
+    // 🔥 GENERATE TOKEN
     const token = jwt.sign(
       { id: user.id, phone: user.phone },
       "secret123",
