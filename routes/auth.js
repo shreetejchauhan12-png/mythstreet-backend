@@ -60,9 +60,10 @@ router.post("/verify-otp", async (req, res) => {
     const user = result.rows[0];
 
     // ❌ INVALID OTP
-    if (parseInt(otp) !== user.otp) {
-      return res.status(400).json({ error: "Invalid OTP" });
-    }
+    // 🔥 SAFE OTP COMPARISON
+if (String(otp) !== String(user.otp)) {
+  return res.status(400).json({ error: "Invalid OTP" });
+}
 
     // ❌ EXPIRED OTP
     if (!user.otp_expiry || new Date() > user.otp_expiry) {
