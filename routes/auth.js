@@ -28,13 +28,13 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    // 🔥 SEND OTP VIA MSG91 (IMPORTANT FIX)
+    // 🔥 SEND OTP VIA MSG91 FLOW API
     const response = await axios.post(
-      "https://control.msg91.com/api/v5/otp",
+      "https://control.msg91.com/api/v5/flow/",
       {
-        template_id: process.env.MSG91_TEMPLATE_ID, // 🔥 REQUIRED
+        template_id: "69e762869a0c34f9580785b9",
         mobile: "91" + phone,
-        otp: otp,
+        OTP: otp, // must match ##OTP## in template
       },
       {
         headers: {
@@ -54,6 +54,7 @@ router.post("/send-otp", async (req, res) => {
       "SEND OTP ERROR:",
       error.response?.data || error.message
     );
+
     res.status(500).json({
       error: "Failed to send OTP",
       details: error.response?.data || error.message,
