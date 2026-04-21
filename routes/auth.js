@@ -8,6 +8,8 @@ const router = express.Router();
 // 🔥 SEND OTP (PHONE)
 router.post("/send-otp", async (req, res) => {
   try {
+    console.log("🔥 /send-otp HIT");
+
     const { phone } = req.body;
 
     if (!phone) {
@@ -28,13 +30,15 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
+    console.log("📦 OTP stored in DB:", otp);
+
     // 🔥 SEND OTP VIA MSG91 FLOW API
     const response = await axios.post(
       "https://control.msg91.com/api/v5/flow/",
       {
         template_id: "69e762869a0c34f9580785b9",
         mobile: "91" + phone,
-        OTP: otp, // must match ##OTP## in template
+        OTP: otp, // MUST match ##OTP## in template
       },
       {
         headers: {
@@ -44,14 +48,14 @@ router.post("/send-otp", async (req, res) => {
       }
     );
 
-    console.log("📲 OTP sent to", phone);
-    console.log("MSG91 RESPONSE:", response.data);
+    console.log("📲 OTP sent to:", phone);
+    console.log("📡 MSG91 RESPONSE:", response.data);
 
     res.json({ success: true });
 
   } catch (error) {
     console.error(
-      "SEND OTP ERROR:",
+      "❌ SEND OTP ERROR:",
       error.response?.data || error.message
     );
 
@@ -66,6 +70,8 @@ router.post("/send-otp", async (req, res) => {
 // 🔥 VERIFY OTP (LOGIN)
 router.post("/verify-otp", async (req, res) => {
   try {
+    console.log("🔥 /verify-otp HIT");
+
     const { phone, otp } = req.body;
 
     if (!phone || !otp) {
@@ -110,6 +116,8 @@ router.post("/verify-otp", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    console.log("✅ LOGIN SUCCESS:", user.phone);
+
     res.json({
       success: true,
       token,
@@ -120,7 +128,7 @@ router.post("/verify-otp", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("VERIFY OTP ERROR:", error);
+    console.error("❌ VERIFY OTP ERROR:", error);
     res.status(500).json({ error: "Failed to verify OTP" });
   }
 });
