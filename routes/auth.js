@@ -5,7 +5,6 @@ import axios from "axios";
 
 const router = express.Router();
 
-
 // 🔥 SEND OTP (PHONE)
 router.post("/send-otp", async (req, res) => {
   try {
@@ -29,10 +28,11 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    // 🔥 SEND OTP VIA MSG91
-    await axios.post(
+    // 🔥 SEND OTP VIA MSG91 (IMPORTANT FIX)
+    const response = await axios.post(
       "https://control.msg91.com/api/v5/otp",
       {
+        template_id: process.env.MSG91_TEMPLATE_ID, // 🔥 REQUIRED
         mobile: "91" + phone,
         otp: otp,
       },
@@ -45,6 +45,7 @@ router.post("/send-otp", async (req, res) => {
     );
 
     console.log("📲 OTP sent to", phone);
+    console.log("MSG91 RESPONSE:", response.data);
 
     res.json({ success: true });
 
@@ -53,7 +54,10 @@ router.post("/send-otp", async (req, res) => {
       "SEND OTP ERROR:",
       error.response?.data || error.message
     );
-    res.status(500).json({ error: "Failed to send OTP" });
+    res.status(500).json({
+      error: "Failed to send OTP",
+      details: error.response?.data || error.message,
+    });
   }
 });
 
@@ -101,7 +105,7 @@ router.post("/verify-otp", async (req, res) => {
     // 🔥 GENERATE TOKEN
     const token = jwt.sign(
       { id: user.id, phone: user.phone },
-      process.env.JWT_SECRET || "secret123",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
@@ -119,6 +123,5 @@ router.post("/verify-otp", async (req, res) => {
     res.status(500).json({ error: "Failed to verify OTP" });
   }
 });
-
 
 export default router;
