@@ -85,6 +85,8 @@ router.post("/verify-msg91", async (req, res) => {
 // 🔥 SEND OTP (OLD - COSTLY)
 router.post("/send-otp", async (req, res) => {
   try {
+    console.log("🔥 /send-otp HIT");
+
     const { phone } = req.body;
 
     if (!phone) {
@@ -92,6 +94,8 @@ router.post("/send-otp", async (req, res) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
+
+    console.log("📦 GENERATED OTP:", otp);
 
     await pool.query(
       `
@@ -103,32 +107,21 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    await axios.post(
-      "https://api.msg91.com/api/v2/sendsms",
-      {
-        sender: "MYTHSTREET",
-        route: "4",
-        country: "91",
-        sms: [
-          {
-            message: `Your OTP for MythStreet is ${otp}. Do not share it.`,
-            to: [phone],
-          },
-        ],
-      },
-      {
-        headers: {
-          authkey: process.env.MSG91_AUTH_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    // 🔥 TEMP: RETURN OTP DIRECTLY (FOR TEST)
+    return res.json({
+      success: true,
+      otp,
+    });
 
-    res.json({ success: true });
+    // ❌ SMS temporarily skipped
 
   } catch (error) {
     console.error("❌ SEND OTP ERROR:", error);
-    res.status(500).json({ error: "Failed to send OTP" });
+
+    res.status(500).json({
+      error: "Failed to send OTP",
+      details: error.message,
+    });
   }
 });
 
