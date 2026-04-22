@@ -5,21 +5,94 @@ import axios from "axios";
 
 const router = express.Router();
 
-// 🔥 SEND OTP (PHONE)
+
+// ============================================
+// 🔥 NEW SYSTEM (PRIMARY) — MSG91 TOKEN LOGIN
+// ============================================
+router.post("/verify-msg91", async (req, res) => {
+  try {
+    console.log("🔥 /verify-msg91 HIT");
+
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: "Token required" });
+    }
+
+    // 🔥 VERIFY WITH MSG91
+    const response = await axios.post(
+      "https://control.msg91.com/api/v5/widget/verifyAccessToken",
+      {
+        authkey: process.env.MSG91_AUTH_KEY,
+        "access-token": token,
+      }
+    );
+
+    console.log("📡 MSG91 VERIFY RESPONSE:", response.data);
+
+    const phone = response.data?.data?.mobile;
+
+    if (!phone) {
+      return res.status(400).json({ error: "Invalid token" });
+    }
+
+    // 🔥 CREATE / UPDATE USER
+    const result = await pool.query(
+      `
+      INSERT INTO users (phone)
+      VALUES ($1)
+      ON CONFLICT (phone)
+      DO UPDATE SET phone = EXCLUDED.phone
+      RETURNING *
+      `,
+      [phone]
+    );
+
+    const user = result.rows[0];
+
+    // 🔥 JWT (LONG SESSION = NO OTP AGAIN)
+    const jwtToken = jwt.sign(
+      { id: user.id, phone: user.phone },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.json({
+      success: true,
+      token: jwtToken,
+      user: {
+        id: user.id,
+        phone: user.phone,
+      },
+    });
+
+  } catch (error) {
+    console.error(
+      "❌ MSG91 VERIFY ERROR:",
+      error.response?.data || error.message
+    );
+
+    res.status(500).json({
+      error: "Verification failed",
+      details: error.response?.data || error.message,
+    });
+  }
+});
+// ============================================
+// ⚠️ OLD SYSTEM (KEEP AS BACKUP)
+// ============================================
+
+// 🔥 SEND OTP (OLD - COSTLY)
 router.post("/send-otp", async (req, res) => {
   try {
-    console.log("🔥 /send-otp HIT");
-
     const { phone } = req.body;
 
     if (!phone) {
       return res.status(400).json({ error: "Phone required" });
     }
 
-    // 🔥 GENERATE OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
 
-    // 🔥 SAVE / UPDATE USER
     await pool.query(
       `
       INSERT INTO users (phone, otp, otp_expiry)
@@ -30,59 +103,40 @@ router.post("/send-otp", async (req, res) => {
       [phone, otp]
     );
 
-    console.log("📦 OTP stored in DB:", otp);
-
-    // 🔥 SEND OTP VIA MSG91 SMS API
-const response = await axios.post(
-  "https://api.msg91.com/api/v2/sendsms",
-  {
-    sender: "MYTHSTREET", // must match your approved Sender ID
-    route: "4", // transactional route
-    country: "91",
-    sms: [
+    await axios.post(
+      "https://api.msg91.com/api/v2/sendsms",
       {
-        message: `Your OTP for MythStreet is ${otp}. Do not share it.`,
-        to: [phone],
+        sender: "MYTHSTREET",
+        route: "4",
+        country: "91",
+        sms: [
+          {
+            message: `Your OTP for MythStreet is ${otp}. Do not share it.`,
+            to: [phone],
+          },
+        ],
       },
-    ],
-  },
-  {
-    headers: {
-      authkey: process.env.MSG91_AUTH_KEY,
-      "Content-Type": "application/json",
-    },
-  }
-);
-
-    console.log("📲 OTP sent to:", phone);
-    console.log("📡 MSG91 RESPONSE:", response.data);
+      {
+        headers: {
+          authkey: process.env.MSG91_AUTH_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     res.json({ success: true });
 
   } catch (error) {
-    console.error(
-      "❌ SEND OTP ERROR:",
-      error.response?.data || error.message
-    );
-
-    res.status(500).json({
-      error: "Failed to send OTP",
-      details: error.response?.data || error.message,
-    });
+    console.error("❌ SEND OTP ERROR:", error);
+    res.status(500).json({ error: "Failed to send OTP" });
   }
 });
 
 
-// 🔥 VERIFY OTP (LOGIN)
+// 🔥 VERIFY OTP (OLD)
 router.post("/verify-otp", async (req, res) => {
   try {
-    console.log("🔥 /verify-otp HIT");
-
     const { phone, otp } = req.body;
-
-    if (!phone || !otp) {
-      return res.status(400).json({ error: "Phone & OTP required" });
-    }
 
     const result = await pool.query(
       "SELECT * FROM users WHERE phone = $1",
@@ -95,34 +149,24 @@ router.post("/verify-otp", async (req, res) => {
 
     const user = result.rows[0];
 
-    // ❌ INVALID OTP
     if (String(otp) !== String(user.otp)) {
       return res.status(400).json({ error: "Invalid OTP" });
     }
 
-    // ❌ EXPIRED OTP
     if (!user.otp_expiry || new Date() > user.otp_expiry) {
       return res.status(400).json({ error: "OTP expired" });
     }
 
-    // 🔥 CLEAR OTP
     await pool.query(
-      `
-      UPDATE users 
-      SET otp = NULL, otp_expiry = NULL 
-      WHERE phone = $1
-      `,
+      `UPDATE users SET otp = NULL, otp_expiry = NULL WHERE phone = $1`,
       [phone]
     );
 
-    // 🔥 GENERATE TOKEN
     const token = jwt.sign(
       { id: user.id, phone: user.phone },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-
-    console.log("✅ LOGIN SUCCESS:", user.phone);
 
     res.json({
       success: true,
@@ -138,5 +182,12 @@ router.post("/verify-otp", async (req, res) => {
     res.status(500).json({ error: "Failed to verify OTP" });
   }
 });
+
+
+// 🔥 LOGOUT
+router.post("/logout", (req, res) => {
+  res.json({ success: true });
+});
+
 
 export default router;
