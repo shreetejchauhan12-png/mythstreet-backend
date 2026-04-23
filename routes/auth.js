@@ -22,13 +22,9 @@ router.post("/verify-msg91", async (req, res) => {
     // 🔥 VERIFY WITH MSG91 (CORRECT)
 const response = await axios.post(
   "https://control.msg91.com/api/v5/widget/verifyAccessToken",
-  {},
   {
-    headers: {
-      authkey: process.env.MSG91_AUTH_KEY,
-      "access-token": token,
-      "Content-Type": "application/json",
-    },
+    authkey: process.env.MSG91_AUTH_KEY,
+    "access-token": token,
   }
 );
 console.log("MSG91 FULL VERIFY RESPONSE:", response.data);
