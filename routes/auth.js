@@ -18,6 +18,14 @@ router.post("/verify-msg91", async (req, res) => {
     if (!token) {
       return res.status(400).json({ error: "Token required" });
     }
+    // 🔥 VERIFY WITH MSG91
+const response = await axios.post(
+  "https://control.msg91.com/api/v5/widget/verifyAccessToken",
+  {
+    authkey: process.env.MSG91_AUTH_KEY,
+    "access-token": token,
+  }
+);
 
     // 🔥 VERIFY WITH MSG91
 
