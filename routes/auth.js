@@ -207,5 +207,30 @@ router.post("/logout", (req, res) => {
   res.json({ success: true });
 });
 
+router.post("/update-name", async (req, res) => {
+  try {
+    const { name } = req.body;
 
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const result = await pool.query(
+      "UPDATE users SET name = $1 WHERE id = $2 RETURNING *",
+      [name, decoded.id]
+    );
+
+    return res.json({
+      success: true,
+      user: result.rows[0],
+    });
+
+  } catch (error) {
+    console.error("❌ UPDATE NAME ERROR:", error);
+    return res.status(500).json({ error: "Failed to update name" });
+  }
+});
 export default router;
