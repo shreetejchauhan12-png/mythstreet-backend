@@ -33,32 +33,10 @@ const response = await axios.post(
 
     // ✅ GET PHONE
     // STEP 1: get access token (JWT)
-const accessToken = response.data?.message;
-
-if (!accessToken) {
-  return res.status(400).json({ error: "Invalid token" });
-}
-
-// STEP 2: verify again to get real phone
-const verifyRes = await axios.post(
-  "https://control.msg91.com/api/v5/widget/verifyAccessToken",
-  {},
-  {
-    headers: {
-      authkey: process.env.MSG91_AUTH_KEY,
-      "access-token": accessToken,
-      "Content-Type": "application/json",
-    },
-  }
-);
-
-console.log("FINAL VERIFY RESPONSE:", verifyRes.data);
-
-// ✅ NOW GET ACTUAL PHONE
-const phone = verifyRes.data?.data?.mobile;
+const phone = response.data?.message;
 
 if (!phone) {
-  return res.status(400).json({ error: "Phone not found" });
+  return res.status(400).json({ error: "Invalid token" });
 }
 
     // 🔥 CREATE / UPDATE USER
