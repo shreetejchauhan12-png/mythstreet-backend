@@ -32,11 +32,34 @@ const response = await axios.post(
     console.log("📡 MSG91 VERIFY RESPONSE:", response.data);
 
     // ✅ GET PHONE
-    const phone = response.data?.message;
+    // STEP 1: get access token (JWT)
+const accessToken = response.data?.message;
 
-    if (!phone) {
-      return res.status(400).json({ error: "Invalid token" });
-    }
+if (!accessToken) {
+  return res.status(400).json({ error: "Invalid token" });
+}
+
+// STEP 2: verify again to get real phone
+const verifyRes = await axios.post(
+  "https://control.msg91.com/api/v5/widget/verifyAccessToken",
+  {},
+  {
+    headers: {
+      authkey: process.env.MSG91_AUTH_KEY,
+      "access-token": accessToken,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
+console.log("FINAL VERIFY RESPONSE:", verifyRes.data);
+
+// ✅ NOW GET ACTUAL PHONE
+const phone = verifyRes.data?.data?.mobile;
+
+if (!phone) {
+  return res.status(400).json({ error: "Phone not found" });
+}
 
     // 🔥 CREATE / UPDATE USER
     const result = await pool.query(
@@ -60,13 +83,14 @@ const response = await axios.post(
     );
 
     return res.json({
-      success: true,
-      token: jwtToken,
-      user: {
-        id: user.id,
-        phone: user.phone,
-      },
-    });
+  success: true,
+  token: jwtToken,
+  user: {
+    id: user.id,
+    phone: user.phone,
+    name: user.name, // ✅ ADD THIS LINE
+  },
+});
 
   } catch (error) {
     console.error(
