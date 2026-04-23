@@ -33,7 +33,7 @@ router.post("/verify-msg91", async (req, res) => {
     console.log("📡 MSG91 VERIFY RESPONSE:", response.data);
 
     // ✅ GET PHONE
-    const phone = response.data?.data?.mobile;
+    const phone = response.data?.message;
 
     if (!phone) {
       return res.status(400).json({ error: "Invalid token" });
