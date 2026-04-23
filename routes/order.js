@@ -3,14 +3,23 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import pool from "../config/db.js";
 import auth from "../middleware/auth.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
 // ✅ CREATE ORDER
 router.post("/", async (req, res) => {
   try {
+    // 🔐 GET USER FROM TOKEN
+const token = req.headers.authorization?.split(" ")[1];
+
+if (!token) {
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const userId = decoded.id;
     const {
-      userId,
       name,
       email,
       phone,
@@ -212,8 +221,19 @@ router.get("/:id", async (req, res) => {
 // ✅ GET ALL ORDERS (FINAL CLEAN)
 router.get("/", async (req, res) => {
   try {
+    // 🔐 GET TOKEN
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ✅ ONLY THIS USER'S ORDERS
     const result = await pool.query(
-      `SELECT * FROM orders ORDER BY id DESC`
+      `SELECT * FROM orders WHERE user_id = $1 ORDER BY id DESC`,
+      [decoded.id]
     );
 
     const orders = result.rows;
@@ -229,7 +249,7 @@ router.get("/", async (req, res) => {
     res.json({ orders });
 
   } catch (error) {
-    console.error("🔥 GET ALL ORDERS ERROR:", error);
+    console.error("🔥 GET USER ORDERS ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
