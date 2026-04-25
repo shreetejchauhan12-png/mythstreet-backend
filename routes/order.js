@@ -189,15 +189,25 @@ res.json({ success: true });
 // ✅ GET ORDER BY ID
 router.get("/:id", async (req, res) => {
   try {
+    // 🔐 GET TOKEN
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     const orderId = req.params.id;
 
+    // ✅ CHECK IF ORDER BELONGS TO USER
     const orderResult = await pool.query(
-      `SELECT * FROM orders WHERE id = $1`,
-      [orderId]
+      `SELECT * FROM orders WHERE id = $1 AND user_id = $2`,
+      [orderId, decoded.id]
     );
 
     if (orderResult.rows.length === 0) {
-      return res.status(404).json({ error: "Order not found" });
+      return res.status(403).json({ error: "Access denied" });
     }
 
     const order = orderResult.rows[0];
