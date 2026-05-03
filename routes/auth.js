@@ -55,10 +55,14 @@ if (!phone) {
 
     // 🔥 JWT (30 DAYS LOGIN)
     const jwtToken = jwt.sign(
-      { id: user.id, phone: user.phone },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+  {
+    id: user.id,
+    phone: user.phone,
+    role: user.phone === "919021943839" ? "admin" : "user",
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "30d" }
+);
 
     return res.json({
   success: true,
@@ -156,10 +160,14 @@ router.post("/verify-otp", async (req, res) => {
     );
 
     const token = jwt.sign(
-      { id: user.id, phone: user.phone },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+  {
+    id: user.id,
+    phone: user.phone,
+    role: user.phone === "919021943839" ? "admin" : "user",
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
 
     return res.json({
       success: true,

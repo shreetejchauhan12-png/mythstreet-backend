@@ -7,6 +7,7 @@ import pool from "./config/db.js";
 import productsRoutes from "./routes/products.js";
 import orderRoutes from "./routes/order.js";
 import authRoutes from "./routes/auth.js";
+import { sendEmail } from "./utils/sendEmail.js";
 
 const app = express();
 
@@ -61,6 +62,20 @@ app.get("/test-db", async (req, res) => {
   } catch (error) {
     console.error("DB ERROR:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+// ✅ EMAIL TEST
+app.get("/test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      subject: "🔥 Test Email - MythStreet",
+      text: "If you received this, email is working perfectly ✅",
+    });
+
+    res.send("✅ Email sent");
+  } catch (err) {
+    console.error("EMAIL ERROR:", err);
+    res.send("❌ Email failed");
   }
 });
 

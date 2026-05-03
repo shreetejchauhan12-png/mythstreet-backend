@@ -4,6 +4,7 @@ import crypto from "crypto";
 import pool from "../config/db.js";
 import auth from "../middleware/auth.js";
 import jwt from "jsonwebtoken";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
@@ -98,11 +99,31 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
     }
 
     // COD
-    return res.json({
-      success: true,
-      orderId,
-      message: "Order placed with COD",
-    });
+console.log("🔥 COD EMAIL TRIGGER");
+
+await sendEmail({
+  subject: "🛒 New Order (COD) - MythStreet",
+  text: `
+New COD Order Received!
+
+Order ID: ${orderId}
+Name: ${name}
+Phone: ${phone}
+Email: ${email}
+
+Address:
+${address}, ${city}, ${state} - ${pincode}
+
+Amount: ₹${amount}
+Items: ${items.map(i => i.title).join(", ")}
+  `,
+});
+
+return res.json({
+  success: true,
+  orderId,
+  message: "Order placed with COD",
+});
 
   } catch (error) {
     console.error("🔥 ORDER ERROR:", error);
@@ -128,13 +149,48 @@ router.post("/verify", async (req, res) => {
       .digest("hex");
 
     if (expectedSign === razorpay_signature) {
-      await pool.query(
-        `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
-        [orderId]
-      );
+  await pool.query(
+    `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
+    [orderId]
+  );
 
-      return res.json({ success: true });
-    } else {
+  // 🔥 GET ORDER DETAILS
+  const orderResult = await pool.query(
+    `SELECT * FROM orders WHERE id = $1`,
+    [orderId]
+  );
+
+  const order = orderResult.rows[0];
+
+  const itemsResult = await pool.query(
+    `SELECT * FROM order_items WHERE order_id = $1`,
+    [orderId]
+  );
+
+  const items = itemsResult.rows;
+
+  // 🔥 SEND EMAIL
+  await sendEmail({
+    subject: "🛒 New Paid Order - MythStreet",
+    text: `
+New Online Order Received!
+
+Order ID: ${orderId}
+Name: ${order.name}
+Phone: ${order.phone}
+Email: ${order.email}
+
+Address:
+${order.address}, ${order.city}, ${order.state} - ${order.pincode}
+
+Amount: ₹${order.total_amount}
+Items: ${items.map(i => i.title).join(", ")}
+    `,
+  });
+
+  return res.json({ success: true });
+}
+     else {
       await pool.query(
         `UPDATE orders SET payment_status = 'failed' WHERE id = $1`,
         [orderId]
@@ -164,9 +220,9 @@ await pool.query(
 // 🔥 AUTO PAYMENT FOR COD
 if (status === "delivered") {
   const result = await pool.query(
-    `SELECT payment_method FROM orders WHERE id = $1`,
-    [orderId]
-  );
+  `SELECT payment_method FROM orders WHERE id = $1`,
+  [orderId]
+);
 
   const paymentMethod = result.rows[0].payment_method;
 
@@ -228,38 +284,45 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ✅ GET ALL ORDERS (FINAL CLEAN)
+// ✅ GET ALL ORDERS (ADMIN - NO AUTH)
 router.get("/", async (req, res) => {
   try {
-    // 🔐 GET TOKEN
     const token = req.headers.authorization?.split(" ")[1];
 
+    // ❌ No token
     if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: "No token provided" });
     }
 
+    // 🔥 Decode JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ ONLY THIS USER'S ORDERS
+    // 🔥 ADMIN CHECK
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ error: "Access denied (admin only)" });
+    }
+
+    console.log("🔥 ADMIN FETCH STARTED");
+
     const result = await pool.query(
-      `SELECT * FROM orders WHERE user_id = $1 ORDER BY id DESC`,
-      [decoded.id]
+      "SELECT * FROM orders ORDER BY created_at DESC"
     );
 
     const orders = result.rows;
 
     for (let order of orders) {
       const itemsResult = await pool.query(
-        `SELECT * FROM order_items WHERE order_id = $1`,
+        "SELECT * FROM order_items WHERE order_id = $1",
         [order.id]
       );
+
       order.items = itemsResult.rows;
     }
 
     res.json({ orders });
 
   } catch (error) {
-    console.error("🔥 GET USER ORDERS ERROR:", error);
+    console.error("❌ ADMIN ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
