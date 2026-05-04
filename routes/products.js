@@ -1,9 +1,10 @@
 import express from "express";
 import pool from "../config/db.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// ✅ GET ALL PRODUCTS (USED FOR TRENDING, SHOP, ETC.)
+// ✅ GET ALL PRODUCTS
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -29,14 +30,11 @@ router.get("/", async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("🔥 PRODUCTS API ERROR:");
-    console.error(error.message);
-    console.error(error.stack);
-
     res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ NEW ARRIVALS (TOP 10 LATEST)
+// ✅ NEW ARRIVALS
 router.get("/new", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -62,9 +60,71 @@ router.get("/new", async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("🔥 NEW PRODUCTS API ERROR:");
-    console.error(error.message);
-    console.error(error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
 
+// 🛒 ADD TO CART
+router.post("/cart", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const { product_id, title, price, image } = req.body;
+
+    const existing = await pool.query(
+      `SELECT * FROM cart WHERE user_id = $1 AND product_id = $2`,
+      [userId, product_id]
+    );
+
+    if (existing.rows.length > 0) {
+      await pool.query(
+        `UPDATE cart SET quantity = quantity + 1 WHERE user_id = $1 AND product_id = $2`,
+        [userId, product_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO cart (user_id, product_id, title, price, image, quantity)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [userId, product_id, title, price, image, 1]
+      );
+    }
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error("🔥 CART ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 🛒 GET USER CART (🔥 NEW IMPORTANT)
+router.get("/cart", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const result = await pool.query(
+      `SELECT * FROM cart WHERE user_id = $1`,
+      [userId]
+    );
+
+    res.json({ cart: result.rows });
+
+  } catch (error) {
+    console.error("🔥 GET CART ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
