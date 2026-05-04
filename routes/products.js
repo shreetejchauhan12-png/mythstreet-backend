@@ -96,7 +96,11 @@ router.post("/cart", async (req, res) => {
       );
     }
 
-    res.json({ success: true });
+    res.json({
+  success: true,
+  userId: userId,
+  product_id: product_id,
+});
 
   } catch (error) {
     console.error("🔥 CART ERROR:", error);
