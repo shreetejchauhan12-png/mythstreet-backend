@@ -76,31 +76,34 @@ router.post("/cart", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
-    const { product_id, title, price, image } = req.body;
+    const { product_id, size, title, price, image } = req.body;
 
     const existing = await pool.query(
-      `SELECT * FROM cart WHERE user_id = $1 AND product_id = $2`,
-      [userId, product_id]
+      `SELECT * FROM cart WHERE user_id = $1 AND product_id = $2 AND size = $3`,
+      [userId, product_id, size] // ✅ FIXED
     );
 
     if (existing.rows.length > 0) {
       await pool.query(
-        `UPDATE cart SET quantity = quantity + 1 WHERE user_id = $1 AND product_id = $2`,
-        [userId, product_id]
+        `UPDATE cart 
+         SET quantity = quantity + 1 
+         WHERE user_id = $1 AND product_id = $2 AND size = $3`,
+        [userId, product_id, size] // ✅ FIXED
       );
     } else {
       await pool.query(
-        `INSERT INTO cart (user_id, product_id, title, price, image, quantity)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [userId, product_id, title, price, image, 1]
+        `INSERT INTO cart (user_id, product_id, size, title, price, image, quantity)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [userId, product_id, size, title, price, image, 1]
       );
     }
 
     res.json({
-  success: true,
-  userId: userId,
-  product_id: product_id,
-});
+      success: true,
+      userId,
+      product_id,
+      size,
+    });
 
   } catch (error) {
     console.error("🔥 CART ERROR:", error);
