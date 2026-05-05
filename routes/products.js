@@ -184,14 +184,18 @@ router.post("/cart/decrease", async (req, res) => {
     await pool.query(
       `UPDATE cart 
        SET quantity = quantity - 1 
-       WHERE user_id = $1 AND product_id = $2 AND size = $3`,
+      WHERE user_id = $1 
+AND product_id = $2 
+AND (size = $3 OR (size IS NULL AND $3 IS NULL))`,
       [userId, product_id, size]
     );
 
     // 2️⃣ remove if quantity becomes 0
     await pool.query(
       `DELETE FROM cart 
-       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND quantity <= 0`,
+       WHERE user_id = $1 
+AND product_id = $2 
+AND (size = $3 OR (size IS NULL AND $3 IS NULL)) AND quantity <= 0`,
       [userId, product_id, size]
     );
 
@@ -200,6 +204,85 @@ router.post("/cart/decrease", async (req, res) => {
   } catch (error) {
     console.error("🔥 DECREASE ERROR:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+// ❤️ ADD TO WISHLIST
+router.post("/wishlist", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const { product_id, title, price, image } = req.body;
+
+    const existing = await pool.query(
+      `SELECT * FROM wishlist WHERE user_id = $1 AND product_id = $2`,
+      [userId, product_id]
+    );
+
+    if (existing.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO wishlist (user_id, product_id, title, price, image)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [userId, product_id, title, price, image]
+      );
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("WISHLIST ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ❤️ GET WISHLIST
+router.get("/wishlist", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const result = await pool.query(
+      `SELECT * FROM wishlist WHERE user_id = $1`,
+      [userId]
+    );
+
+    res.json({ wishlist: result.rows });
+
+  } catch (err) {
+    console.error("GET WISHLIST ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ❌ REMOVE FROM WISHLIST
+router.delete("/wishlist", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const { product_id } = req.body;
+
+    await pool.query(
+      `DELETE FROM wishlist WHERE user_id = $1 AND product_id = $2`,
+      [userId, product_id]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("DELETE WISHLIST ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 export default router;
