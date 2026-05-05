@@ -135,5 +135,71 @@ router.get("/cart", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// 🗑 REMOVE FROM CART
+router.delete("/cart", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
 
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const { product_id, size } = req.body;
+
+    if (!product_id || !size) {
+      return res.status(400).json({ error: "Missing product_id or size" });
+    }
+
+    await pool.query(
+      `DELETE FROM cart 
+       WHERE user_id = $1 AND product_id = $2 AND size = $3`,
+      [userId, product_id, size]
+    );
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error("🔥 DELETE CART ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+// ➖ DECREASE QUANTITY
+router.post("/cart/decrease", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const { product_id, size } = req.body;
+
+    // 1️⃣ decrease quantity
+    await pool.query(
+      `UPDATE cart 
+       SET quantity = quantity - 1 
+       WHERE user_id = $1 AND product_id = $2 AND size = $3`,
+      [userId, product_id, size]
+    );
+
+    // 2️⃣ remove if quantity becomes 0
+    await pool.query(
+      `DELETE FROM cart 
+       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND quantity <= 0`,
+      [userId, product_id, size]
+    );
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error("🔥 DECREASE ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 export default router;
