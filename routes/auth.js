@@ -13,7 +13,7 @@ router.post("/verify-msg91", async (req, res) => {
   try {
     console.log("🔥 /verify-msg91 HIT");
 
-    const { token } = req.body;
+    const { token, name, email } = req.body;
 
     if (!token) {
       return res.status(400).json({ error: "Token required" });
@@ -41,15 +41,23 @@ if (!phone) {
 
     // 🔥 CREATE / UPDATE USER
     const result = await pool.query(
-      `
-      INSERT INTO users (phone)
-      VALUES ($1)
-      ON CONFLICT (phone)
-      DO UPDATE SET phone = EXCLUDED.phone
-      RETURNING *
-      `,
-      [phone]
-    );
+  `
+  INSERT INTO users (phone, name, email)
+  VALUES ($1, $2, $3)
+
+  ON CONFLICT (phone)
+  DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email
+
+  RETURNING *
+  `,
+  [
+    phone,
+    name || "User",
+    email || "",
+  ]
+);
 
     const user = result.rows[0];
 
@@ -70,7 +78,8 @@ if (!phone) {
   user: {
     id: user.id,
     phone: user.phone,
-    name: user.name, // ✅ ADD THIS LINE
+    name: user.name,
+    email: user.email,
   },
 });
 
