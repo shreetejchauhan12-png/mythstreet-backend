@@ -40,7 +40,21 @@ if (!phone) {
 }
 
     // 🔥 CREATE / UPDATE USER
-    const result = await pool.query(
+    const existingEmail = await pool.query(
+  "SELECT * FROM users WHERE email = $1",
+  [email]
+);
+
+if (
+  existingEmail.rows.length > 0 &&
+  existingEmail.rows[0].phone !== phone
+) {
+  return res.status(400).json({
+    error: "Email already linked to another account",
+  });
+}
+
+const result = await pool.query(
   `
   INSERT INTO users (phone, name, email)
   VALUES ($1, $2, $3)
@@ -66,6 +80,8 @@ if (!phone) {
   {
     id: user.id,
     phone: user.phone,
+    name: user.name,
+    email: user.email,
     role: user.phone === "919021943839" ? "admin" : "user",
   },
   process.env.JWT_SECRET,
