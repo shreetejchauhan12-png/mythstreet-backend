@@ -40,37 +40,19 @@ if (!phone) {
 }
 
     // 🔥 CREATE / UPDATE USER
-    const existingEmail = await pool.query(
-  "SELECT * FROM users WHERE email = $1",
-  [email]
-);
-
-if (
-  existingEmail.rows.length > 0 &&
-  existingEmail.rows[0].phone !== phone
-) {
-  return res.status(400).json({
-    error: "Email already linked to another account",
-  });
-}
 
 const result = await pool.query(
   `
-  INSERT INTO users (phone, name, email)
-  VALUES ($1, $2, $3)
+  INSERT INTO users (phone)
+  VALUES ($1)
 
   ON CONFLICT (phone)
   DO UPDATE SET
-    name = EXCLUDED.name,
-    email = EXCLUDED.email
+    phone = EXCLUDED.phone
 
   RETURNING *
   `,
-  [
-    phone,
-    name || "User",
-    email || "",
-  ]
+  [phone]
 );
 
     const user = result.rows[0];
