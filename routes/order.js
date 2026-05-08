@@ -241,7 +241,47 @@ res.json({ success: true });
     res.status(500).json({ error: error.message });
   }
 });
+// ✅ GET USER ORDERS
+router.get("/my-orders", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
 
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const result = await pool.query(
+      `
+      SELECT * FROM orders
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      `,
+      [decoded.id]
+    );
+
+    const orders = result.rows;
+
+    for (let order of orders) {
+      const itemsResult = await pool.query(
+        `
+        SELECT * FROM order_items
+        WHERE order_id = $1
+        `,
+        [order.id]
+      );
+
+      order.items = itemsResult.rows;
+    }
+
+    res.json({ orders });
+
+  } catch (error) {
+    console.error("🔥 USER ORDERS ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // ✅ GET ORDER BY ID
 router.get("/:id", async (req, res) => {
   try {
@@ -284,47 +324,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ✅ GET USER ORDERS
-router.get("/my-orders", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const result = await pool.query(
-      `
-      SELECT * FROM orders
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      `,
-      [decoded.id]
-    );
-
-    const orders = result.rows;
-
-    for (let order of orders) {
-      const itemsResult = await pool.query(
-        `
-        SELECT * FROM order_items
-        WHERE order_id = $1
-        `,
-        [order.id]
-      );
-
-      order.items = itemsResult.rows;
-    }
-
-    res.json({ orders });
-
-  } catch (error) {
-    console.error("🔥 USER ORDERS ERROR:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
 // ✅ GET ALL ORDERS (ADMIN - NO AUTH)
 router.get("/", async (req, res) => {
   try {
