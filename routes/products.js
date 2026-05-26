@@ -41,6 +41,7 @@ d.collection,
 
 // ✅ NEW ARRIVALS
 router.get("/new", async (req, res) => {
+  
   try {
     const result = await pool.query(`
       SELECT 
@@ -71,6 +72,36 @@ d.hero_type,
     res.json(result.rows);
   } catch (error) {
     console.error("🔥 NEW PRODUCTS API ERROR:");
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/search", async (req, res) => {
+  try {
+    const q = req.query.q || "";
+
+    const result = await pool.query(
+      `
+      SELECT
+        p.id,
+        p.title,
+        p.base_price as price,
+        d.design,
+        p.variant_code,
+        i.image
+      FROM products p
+      LEFT JOIN designs d ON p.design_id = d.id
+      LEFT JOIN product_images i ON i.product_id = p.id
+      WHERE LOWER(p.title) LIKE LOWER($1)
+      ORDER BY p.created_at DESC
+      LIMIT 8
+      `,
+      [`%${q}%`]
+    );
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error("🔥 SEARCH ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
