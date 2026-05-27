@@ -43,16 +43,18 @@ if (!phone) {
 
 const result = await pool.query(
   `
-  INSERT INTO users (phone)
-  VALUES ($1)
+  INSERT INTO users (phone, name, email)
+VALUES ($1, $2, $3)
 
   ON CONFLICT (phone)
   DO UPDATE SET
-    phone = EXCLUDED.phone
+    phone = EXCLUDED.phone,
+    name = EXCLUDED.name,
+    email = EXCLUDED.email
 
   RETURNING *
   `,
-  [phone]
+  [phone, name, email]
 );
 
     const user = result.rows[0];
