@@ -106,56 +106,6 @@ router.get("/search", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const result = await pool.query(
-      `
-      SELECT
-        p.id,
-        p.title,
-        p.category,
-        p.type,
-        p.base_price as price,
-        p.design_id,
-        p.variant_code,
-        p.is_hero,
-        p.gender_visibility,
-        p.created_at,
-        d.collection,
-        d.design,
-        d.hero_type,
-        i.image,
-        i.hover_left,
-        i.hover_right,
-        i.banner
-      FROM products p
-      LEFT JOIN designs d ON p.design_id = d.id
-      LEFT JOIN product_images i ON i.product_id = p.id
-      WHERE p.id = $1
-      LIMIT 1
-      `,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: "Product not found",
-      });
-    }
-
-    res.json(result.rows[0]);
-
-  } catch (error) {
-    console.error("🔥 PRODUCT ERROR:", error);
-
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-}); 
-
 // 🛒 ADD TO CART
 router.post("/cart", async (req, res) => {
   try {
@@ -377,4 +327,55 @@ router.delete("/wishlist", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        p.id,
+        p.title,
+        p.category,
+        p.type,
+        p.base_price as price,
+        p.design_id,
+        p.variant_code,
+        p.is_hero,
+        p.gender_visibility,
+        p.created_at,
+        d.collection,
+        d.design,
+        d.hero_type,
+        i.image,
+        i.hover_left,
+        i.hover_right,
+        i.banner
+      FROM products p
+      LEFT JOIN designs d ON p.design_id = d.id
+      LEFT JOIN product_images i ON i.product_id = p.id
+      WHERE p.id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Product not found",
+      });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error("🔥 PRODUCT ERROR:", error);
+
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+});  
+
 export default router;
