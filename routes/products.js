@@ -353,6 +353,41 @@ router.get("/feed", async (req, res) => {
   }
 });
 
+router.get("/design/:designId", async (req, res) => {
+  try {
+
+    const { designId } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        type,
+        design_id
+      FROM products
+      WHERE design_id = $1
+      ORDER BY id
+      `,
+      [designId]
+    );
+
+    res.json(result.rows);
+
+  } catch (error) {
+
+    console.error(
+      "🔥 DESIGN VARIANTS ERROR:",
+      error
+    );
+
+    res.status(500).json({
+      error: error.message,
+    });
+
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
