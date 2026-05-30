@@ -361,12 +361,13 @@ router.get("/design/:designId", async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        id,
-        title,
-        type,
-        design_id
-      FROM products
-      WHERE design_id = $1
+  id,
+  title,
+  type,
+  design_id,
+  variant_code
+FROM products
+WHERE design_id = $1
       ORDER BY id
       `,
       [designId]
