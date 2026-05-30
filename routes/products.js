@@ -326,6 +326,31 @@ router.delete("/wishlist", async (req, res) => {
     console.error("DELETE WISHLIST ERROR:", err);
     res.status(500).json({ error: err.message });
   }
+}); 
+
+router.get("/feed", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        p.id,
+        p.title,
+        p.base_price AS price,
+        p.type,
+        i.image
+      FROM products p
+      LEFT JOIN product_images i
+        ON i.product_id = p.id
+      ORDER BY p.id
+    `);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: error.message,
+    });
+  }
 });
 
 router.get("/:id", async (req, res) => {
@@ -376,31 +401,6 @@ router.get("/:id", async (req, res) => {
       error: error.message,
     });
   }
-});  
-
-router.get("/feed", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        p.id,
-        p.title,
-        p.base_price AS price,
-        p.type,
-        i.image
-      FROM products p
-      LEFT JOIN product_images i
-        ON i.product_id = p.id
-      ORDER BY p.id
-    `);
-
-    res.json(result.rows);
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      error: error.message,
-    });
-  }
-});
+}); 
 
 export default router;
