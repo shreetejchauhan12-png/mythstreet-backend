@@ -222,6 +222,9 @@ router.post("/cart/decrease", async (req, res) => {
 
     const { product_id, size } = req.body;
 
+    console.log("DECREASE REQUEST");
+console.log(req.body);
+
     // 1️⃣ decrease quantity
     await pool.query(
       `UPDATE cart 
