@@ -1,17 +1,21 @@
-import "dotenv/config"; // ✅ MUST be first
+import "dotenv/config";
 
 import express from "express";
 import cors from "cors";
 import pool from "./config/db.js";
 
-import productsRoutes from "./routes/products.js";
+import productsRoutes from "./routes/products.routes.js";
 import orderRoutes from "./routes/order.js";
 import authRoutes from "./routes/auth.js";
+
 import { sendEmail } from "./utils/sendEmail.js";
 
 const app = express();
 
-// 🔥 ENV DEBUG (VERY IMPORTANT)
+// ==============================
+// ENV CHECK
+// ==============================
+
 console.log(
   "DATABASE_URL:",
   process.env.DATABASE_URL ? "FOUND ✅" : "MISSING ❌"
@@ -27,12 +31,14 @@ console.log(
   process.env.RESEND_API_KEY ? "FOUND ✅" : "MISSING ❌"
 );
 
-// ❗ HARD FAIL IF RESEND MISSING (so you don’t debug blindly)
 if (!process.env.RESEND_API_KEY) {
   console.error("❌ RESEND_API_KEY is missing in .env");
 }
 
-// ✅ MIDDLEWARE
+// ==============================
+// MIDDLEWARE
+// ==============================
+
 app.use(
   cors({
     origin: "*",
@@ -41,30 +47,47 @@ app.use(
 
 app.use(express.json());
 
-// 🔥 ROUTES
+// ==============================
+// ROUTES
+// ==============================
+
 app.use("/api/products", productsRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/auth", authRoutes);
 
-// ✅ HEALTH CHECK
+// ==============================
+// HEALTH CHECK
+// ==============================
+
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ DB TEST
+// ==============================
+// DATABASE TEST
+// ==============================
+
 app.get("/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
+
     res.json({
       success: true,
       time: result.rows[0],
     });
   } catch (error) {
     console.error("DB ERROR:", error);
-    res.status(500).json({ error: error.message });
+
+    res.status(500).json({
+      error: error.message,
+    });
   }
 });
-// ✅ EMAIL TEST
+
+// ==============================
+// EMAIL TEST
+// ==============================
+
 app.get("/test-email", async (req, res) => {
   try {
     await sendEmail({
@@ -75,22 +98,30 @@ app.get("/test-email", async (req, res) => {
     res.send("✅ Email sent");
   } catch (err) {
     console.error("EMAIL ERROR:", err);
+
     res.send("❌ Email failed");
   }
 });
 
-// ❌ GLOBAL ERROR HANDLER
+// ==============================
+// GLOBAL ERROR HANDLER
+// ==============================
+
 app.use((err, req, res, next) => {
   console.error("❌ GLOBAL ERROR:", err);
+
   res.status(500).json({
     error: "Internal Server Error",
     details: err.message,
   });
 });
 
+// ==============================
+// START SERVER
+// ==============================
+
 const PORT = process.env.PORT || 5000;
 
-// ✅ START SERVER
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
