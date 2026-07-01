@@ -273,7 +273,7 @@ export const getProductSizes = async (productVariantId) => {
     const query = `
       SELECT
         s.id,
-        s.name,s
+        s.name,
         s.sort_order
 
       FROM product_sizes ps
