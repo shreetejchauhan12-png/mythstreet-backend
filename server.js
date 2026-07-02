@@ -5,6 +5,8 @@ import cors from "cors";
 import pool from "./config/db.js";
 
 import productsRoutes from "./routes/products.routes.js";
+import designsRoutes from "./routes/designs.routes.js";
+import collectionsRoutes from "./routes/collections.routes.js";
 import orderRoutes from "./routes/order.js";
 import authRoutes from "./routes/auth.js";
 
@@ -52,6 +54,8 @@ app.use(express.json());
 // ==============================
 
 app.use("/api/products", productsRoutes);
+app.use("/api/designs", designsRoutes);
+app.use("/api/collections", collectionsRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/auth", authRoutes);
 
