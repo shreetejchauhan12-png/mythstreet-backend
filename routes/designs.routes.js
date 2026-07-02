@@ -1,8 +1,22 @@
 import express from "express";
-import { getDesigns } from "../controllers/designs.controller.js";
+
+import {
+  getDesigns,
+  addDesign,
+} from "../controllers/designs.controller.js";
 
 const router = express.Router();
 
+// =====================================
+// GET ALL DESIGNS
+// =====================================
+
 router.get("/", getDesigns);
+
+// =====================================
+// CREATE DESIGN
+// =====================================
+
+router.post("/", addDesign);
 
 export default router;

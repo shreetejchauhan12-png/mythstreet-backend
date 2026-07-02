@@ -1,5 +1,9 @@
 import pool from "../config/db.js";
 
+// =====================================
+// GET ALL DESIGNS
+// =====================================
+
 export const getAllDesigns = async () => {
   try {
     const query = `
@@ -51,12 +55,81 @@ export const getAllDesigns = async () => {
 
     const result = await pool.query(query);
 
-    console.log(result.rows);
-
     return result.rows;
 
   } catch (error) {
-    console.error("GET DESIGNS ERROR:", error);
+
+    console.error(
+      "GET DESIGNS ERROR:",
+      error
+    );
+
     throw error;
+  }
+};
+
+// =====================================
+// CREATE DESIGN
+// =====================================
+
+export const createDesign = async ({
+  name,
+  collection_id,
+  description,
+  seo_title,
+  seo_description,
+}) => {
+  try {
+
+    const slug = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const query = `
+      INSERT INTO designs
+      (
+        name,
+        slug,
+        collection_id,
+        description,
+        seo_title,
+        seo_description
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+      )
+      RETURNING *;
+    `;
+
+    const values = [
+      name,
+      slug,
+      collection_id,
+      description,
+      seo_title,
+      seo_description,
+    ];
+
+    const result = await pool.query(query, values);
+
+    return result.rows[0];
+
+  } catch (error) {
+
+    console.error(
+      "CREATE DESIGN ERROR:",
+      error
+    );
+
+    throw error;
+
   }
 };
