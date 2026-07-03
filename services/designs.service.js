@@ -119,6 +119,67 @@ export const getDesignById = async (id) => {
 };
 
 // =====================================
+// UPDATE DESIGN
+// =====================================
+
+export const updateDesign = async (
+  id,
+  {
+    name,
+    description,
+    seo_title,
+    seo_description,
+  }
+) => {
+  try {
+
+    const slug = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const query = `
+      UPDATE designs
+      SET
+        name = $1,
+        slug = $2,
+        description = $3,
+        seo_title = $4,
+        seo_description = $5
+      WHERE id = $6
+      RETURNING *;
+    `;
+
+    const values = [
+      name,
+      slug,
+      description,
+      seo_title,
+      seo_description,
+      id,
+    ];
+
+    const result = await pool.query(
+      query,
+      values
+    );
+
+    return result.rows[0];
+
+  } catch (error) {
+
+    console.error(
+      "UPDATE DESIGN ERROR:",
+      error
+    );
+
+    throw error;
+
+  }
+};
+
+// =====================================
 // CREATE DESIGN
 // =====================================
 

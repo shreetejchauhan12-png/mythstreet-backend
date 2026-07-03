@@ -2,6 +2,7 @@ import {
   getAllDesigns,
   createDesign,
   getDesignById as getDesignByIdService,
+  updateDesign,
 } from "../services/designs.service.js";
 
 // =====================================
@@ -55,6 +56,38 @@ export const getDesignById = async (req, res) => {
 
     console.error(
       "GET DESIGN BY ID ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+
+  }
+};
+
+// =====================================
+// UPDATE DESIGN
+// =====================================
+
+export const editDesign = async (req, res) => {
+  try {
+
+    const design = await updateDesign(
+      req.params.id,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: design,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "UPDATE DESIGN ERROR:",
       error
     );
 
