@@ -121,6 +121,9 @@ export const editProduct = async (
   res
 ) => {
 
+  console.log("🔥 PUT ROUTE HIT");
+  console.log("BODY:", req.body);
+
   try {
 
     const { id } = req.params;
