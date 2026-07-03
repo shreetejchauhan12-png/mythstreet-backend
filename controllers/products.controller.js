@@ -4,6 +4,7 @@ import {
   getVariantsByDesign,
   searchProductsByName,
   getProductSizes,
+  updateProductVariant,
 } from "../services/products.service.js";
 
 // =====================================
@@ -109,4 +110,45 @@ export const searchProducts = async (req, res) => {
       message: "Internal Server Error",
     });
   }
+};
+
+// =====================================
+// UPDATE PRODUCT VARIANT
+// =====================================
+
+export const editProduct = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const { id } = req.params;
+
+    await updateProductVariant(
+      id,
+      req.body
+    );
+
+    return res.status(200).json({
+
+      success: true,
+
+      message:
+        "Variant updated successfully",
+
+    });
+
+  } catch (error) {
+
+  console.error("UPDATE PRODUCT ERROR:", error);
+
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+    error,
+  });
+
+}
+
 };

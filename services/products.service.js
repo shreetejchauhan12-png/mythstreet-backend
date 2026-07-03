@@ -295,3 +295,165 @@ export const getProductSizes = async (productVariantId) => {
     throw error;
   }
 };
+
+// =====================================
+// UPDATE PRODUCT VARIANT
+// =====================================
+
+export const updateProductVariant = async (
+  id,
+  data
+) => {
+
+  const client =
+    await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // -----------------------
+    // Variant
+    // -----------------------
+
+    await client.query(
+
+      `
+      UPDATE product_variants
+      SET
+        sku = $1,
+        price = $2,
+        is_hero = $3
+      WHERE id = $4
+      `,
+
+      [
+        data.sku,
+        data.price,
+        data.is_hero,
+        id,
+      ]
+
+    );
+
+    // -----------------------
+    // Images
+    // -----------------------
+
+    await client.query(
+
+      `
+      UPDATE product_images
+      SET
+        main_image = $1,
+        image_2 = $2,
+        image_3 = $3,
+        image_4 = $4,
+        image_5 = $5,
+        image_6 = $6,
+        banner_image = $7
+      WHERE product_variant_id = $8
+      `,
+
+      [
+        data.main_image,
+        data.image_2,
+        data.image_3,
+        data.image_4,
+        data.image_5,
+        data.image_6,
+        data.banner_image,
+        id,
+      ]
+
+    );
+
+    // -----------------------
+    // Sizes
+    // -----------------------
+
+    await client.query(
+
+      `
+      DELETE FROM product_sizes
+      WHERE product_variant_id = $1
+      `,
+
+      [id]
+
+    );
+
+    for (const size of data.sizes) {
+
+  let sizeId = size.id;
+
+  // If frontend only sent the name,
+  // fetch the correct database ID.
+  if (!sizeId) {
+
+    const result = await client.query(
+
+      `
+      SELECT id
+      FROM sizes
+      WHERE name = $1
+      LIMIT 1
+      `,
+
+      [size.name]
+
+    );
+
+    if (result.rows.length === 0) {
+
+      throw new Error(
+        `Size '${size.name}' not found`
+      );
+
+    }
+
+    sizeId = result.rows[0].id;
+
+  }
+
+  await client.query(
+
+    `
+    INSERT INTO product_sizes
+    (
+      product_variant_id,
+      size_id
+    )
+    VALUES
+    (
+      $1,
+      $2
+    )
+    `,
+
+    [
+      id,
+      sizeId,
+    ]
+
+  );
+
+}
+
+    await client.query("COMMIT");
+
+    return true;
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
+
+};
