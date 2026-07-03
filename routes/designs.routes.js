@@ -3,6 +3,7 @@ import express from "express";
 import {
   getDesigns,
   addDesign,
+  getDesignById,
 } from "../controllers/designs.controller.js";
 
 const router = express.Router();
@@ -12,6 +13,7 @@ const router = express.Router();
 // =====================================
 
 router.get("/", getDesigns);
+router.get("/:id", getDesignById);
 
 // =====================================
 // CREATE DESIGN

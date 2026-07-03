@@ -6,6 +6,7 @@ import pool from "../config/db.js";
 
 export const getAllDesigns = async () => {
   try {
+
     const query = `
       SELECT
         d.id,
@@ -65,6 +66,55 @@ export const getAllDesigns = async () => {
     );
 
     throw error;
+
+  }
+};
+
+// =====================================
+// GET DESIGN BY ID
+// =====================================
+
+export const getDesignById = async (id) => {
+  try {
+
+    const query = `
+      SELECT
+        d.id,
+        d.name,
+        d.slug,
+        d.description,
+        d.thumbnail_image,
+        d.seo_title,
+        d.seo_description,
+
+        c.id AS collection_id,
+        c.name AS collection,
+        c.slug AS collection_slug
+
+      FROM designs d
+
+      INNER JOIN collections c
+        ON d.collection_id = c.id
+
+      WHERE d.id = $1;
+    `;
+
+    const result = await pool.query(
+      query,
+      [id]
+    );
+
+    return result.rows[0];
+
+  } catch (error) {
+
+    console.error(
+      "GET DESIGN BY ID ERROR:",
+      error
+    );
+
+    throw error;
+
   }
 };
 
@@ -118,7 +168,10 @@ export const createDesign = async ({
       seo_description,
     ];
 
-    const result = await pool.query(query, values);
+    const result = await pool.query(
+      query,
+      values
+    );
 
     return result.rows[0];
 
