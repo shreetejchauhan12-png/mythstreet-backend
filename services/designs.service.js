@@ -17,6 +17,12 @@ export const getAllDesigns = async () => {
         d.seo_title,
         d.seo_description,
 
+        d.status,
+d.featured,
+d.trending,
+d.latest_drop,
+d.best_seller,
+
         c.id AS collection_id,
         c.name AS collection,
         c.slug AS collection_slug,
@@ -84,10 +90,16 @@ export const getDesignById = async (id) => {
         d.slug,
         d.description,
         d.thumbnail_image,
-        d.seo_title,
-        d.seo_description,
+d.seo_title,
+d.seo_description,
 
-        c.id AS collection_id,
+d.status,
+d.featured,
+d.trending,
+d.latest_drop,
+d.best_seller,
+
+c.id AS collection_id,
         c.name AS collection,
         c.slug AS collection_slug
 
@@ -129,6 +141,11 @@ export const updateDesign = async (
     description,
     seo_title,
     seo_description,
+    status,
+    featured,
+    trending,
+    latest_drop,
+    best_seller,
   }
 ) => {
   try {
@@ -142,23 +159,38 @@ export const updateDesign = async (
     const query = `
       UPDATE designs
       SET
-        name = $1,
-        slug = $2,
-        description = $3,
-        seo_title = $4,
-        seo_description = $5
-      WHERE id = $6
-      RETURNING *;
+  name = $1,
+  slug = $2,
+  description = $3,
+  seo_title = $4,
+  seo_description = $5,
+
+  status = $6,
+  featured = $7,
+  trending = $8,
+  latest_drop = $9,
+  best_seller = $10
+
+WHERE id = $11
+
+RETURNING *;
     `;
 
     const values = [
-      name,
-      slug,
-      description,
-      seo_title,
-      seo_description,
-      id,
-    ];
+  name,
+  slug,
+  description,
+  seo_title,
+  seo_description,
+
+  status,
+  featured,
+  trending,
+  latest_drop,
+  best_seller,
+
+  id,
+];
 
     const result = await pool.query(
       query,

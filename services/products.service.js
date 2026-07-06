@@ -457,3 +457,178 @@ export const updateProductVariant = async (
   }
 
 };
+
+// =====================================
+// CREATE PRODUCT VARIANT
+// =====================================
+
+export const createVariant = async (data) => {
+
+  const client = await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // -----------------------
+    // Product Variant
+    // -----------------------
+
+    const variantResult = await client.query(
+
+      `
+      INSERT INTO product_variants
+      (
+        design_id,
+        garment_type_id,
+        color_id,
+        sku,
+        price,
+        qikink_product_id,
+        is_hero,
+        display_order
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8
+      )
+      RETURNING id;
+      `,
+
+      [
+        data.design_id,
+        data.garment_type_id,
+        data.color_id,
+        data.sku,
+        data.price,
+        data.qikink_product_id || null,
+        data.is_hero,
+        0,
+      ]
+
+    );
+
+    const variantId =
+      variantResult.rows[0].id;
+
+    // -----------------------
+    // Images
+    // -----------------------
+
+    await client.query(
+
+      `
+      INSERT INTO product_images
+      (
+        product_variant_id,
+        main_image,
+        image_2,
+        image_3,
+        image_4,
+        image_5,
+        image_6,
+        banner_image
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8
+      )
+      `,
+
+      [
+        variantId,
+        data.main_image,
+        data.image_2,
+        data.image_3,
+        data.image_4,
+        data.image_5,
+        data.image_6,
+        data.banner_image,
+      ]
+
+    );
+
+    // -----------------------
+    // Sizes
+    // -----------------------
+
+    for (const size of data.sizes) {
+
+      let sizeId = size.id;
+
+      if (!sizeId) {
+
+        const result =
+          await client.query(
+
+            `
+            SELECT id
+            FROM sizes
+            WHERE name = $1
+            LIMIT 1
+            `,
+
+            [size.name]
+
+          );
+
+        if (
+          result.rows.length === 0
+        ) {
+
+          throw new Error(
+            `Size '${size.name}' not found`
+          );
+
+        }
+
+        sizeId =
+          result.rows[0].id;
+
+      }
+
+      await client.query(
+
+        `
+        INSERT INTO product_sizes
+        (
+          product_variant_id,
+          size_id
+        )
+        VALUES
+        (
+          $1,
+          $2
+        )
+        `,
+
+        [
+          variantId,
+          sizeId,
+        ]
+
+      );
+
+    }
+
+    await client.query("COMMIT");
+
+    return {
+
+      id: variantId,
+
+    };
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
+
+};

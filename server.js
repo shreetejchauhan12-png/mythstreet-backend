@@ -9,6 +9,8 @@ import designsRoutes from "./routes/designs.routes.js";
 import collectionsRoutes from "./routes/collections.routes.js";
 import orderRoutes from "./routes/order.js";
 import authRoutes from "./routes/auth.js";
+import lookupsRoutes from "./routes/lookups.routes.js";
+import homepageRoutes from "./routes/homepage.routes.js";
 
 import { sendEmail } from "./utils/sendEmail.js";
 
@@ -58,6 +60,8 @@ app.use("/api/designs", designsRoutes);
 app.use("/api/collections", collectionsRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/lookups", lookupsRoutes);
+app.use("/api/homepage", homepageRoutes);
 
 // ==============================
 // HEALTH CHECK
