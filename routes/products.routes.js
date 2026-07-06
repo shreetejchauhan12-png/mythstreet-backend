@@ -2,6 +2,8 @@ import express from "express";
 
 import auth from "../middleware/auth.js";
 
+console.log("✅ PRODUCTS ROUTES FILE LOADED");
+
 import {
   getProducts,
   getProduct,
@@ -17,6 +19,12 @@ import {
   decreaseCart,
   removeCartItem,
 } from "../controllers/cart.controller.js";
+
+import {
+  getWishlist,
+  addWishlist,
+  removeWishlist,
+} from "../controllers/wishlist.controller.js";
 
 const router = express.Router();
 
@@ -49,6 +57,28 @@ router.delete(
 );
 
 // =====================================
+// WISHLIST
+// =====================================
+
+router.get(
+  "/wishlist",
+  auth,
+  getWishlist
+);
+
+router.post(
+  "/wishlist",
+  auth,
+  addWishlist
+);
+
+router.delete(
+  "/wishlist",
+  auth,
+  removeWishlist
+);
+
+// =====================================
 // PRODUCTS
 // =====================================
 
@@ -65,7 +95,13 @@ router.get("/design/:designId", getDesignVariants);
 router.post("/", createProductVariant);
 
 // GET SINGLE PRODUCT
-router.get("/:id", getProduct);
+router.get("/:id", (req, res, next) => {
+
+  console.log("GET PRODUCT ROUTE HIT:", req.params.id);
+
+  return getProduct(req, res, next);
+
+});
 
 // UPDATE PRODUCT VARIANT
 router.put("/:id", editProduct);

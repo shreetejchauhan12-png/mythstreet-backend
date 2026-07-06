@@ -55,7 +55,13 @@ app.use(express.json());
 // ROUTES
 // ==============================
 
-app.use("/api/products", productsRoutes);
+app.use("/api/products", (req, res, next) => {
+
+  console.log("➡️", req.method, req.originalUrl);
+
+  next();
+
+}, productsRoutes);
 app.use("/api/designs", designsRoutes);
 app.use("/api/collections", collectionsRoutes);
 app.use("/api/order", orderRoutes);
