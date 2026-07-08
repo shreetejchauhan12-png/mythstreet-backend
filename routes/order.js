@@ -368,4 +368,63 @@ router.get("/", async (req, res) => {
   }
 });
 
+// ✅ CANCEL ORDER
+router.put("/:id/cancel", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const orderId = req.params.id;
+
+    // Check that the order belongs to the logged-in user
+    const result = await pool.query(
+      `SELECT * FROM orders WHERE id = $1 AND user_id = $2`,
+      [orderId, decoded.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const order = result.rows[0];
+
+    // Don't allow cancellation after shipping
+    if (
+      ["shipped", "out_for_delivery", "delivered"].includes(
+        order.status
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Order can no longer be cancelled.",
+      });
+    }
+
+    await pool.query(
+      `UPDATE orders SET status = 'cancelled' WHERE id = $1`,
+      [orderId]
+    );
+
+    res.json({
+      success: true,
+      message: "Order cancelled successfully.",
+    });
+
+  } catch (error) {
+    console.error("CANCEL ORDER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 export default router;
