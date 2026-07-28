@@ -27,19 +27,38 @@ d.best_seller,
         c.name AS collection,
         c.slug AS collection_slug,
 
-        COUNT(pv.id) AS total_variants,
+        COUNT(DISTINCT pv.id) AS total_variants,
 
-        MIN(pv.price) AS starting_price,
+MIN(pv.price) AS starting_price,
 
-        MAX(
-          CASE
-            WHEN pv.is_hero = true
-            THEN 1
-            ELSE 0
-          END
-        ) AS has_hero,
+MAX(
+  CASE
+    WHEN pv.is_hero = true
+    THEN 1
+    ELSE 0
+  END
+) AS has_hero,
 
-        MAX(pi.main_image) AS main_image
+MAX(
+  CASE
+    WHEN pv.is_hero = true
+    THEN pi.main_image
+  END
+) AS main_image,
+
+MAX(
+  CASE
+    WHEN pv.is_hero = true
+    THEN pv.id
+  END
+) AS hero_variant_id,
+
+MAX(
+  CASE
+    WHEN pv.is_hero = true
+    THEN pv.price
+  END
+) AS hero_price
 
       FROM designs d
 

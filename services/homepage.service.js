@@ -6,29 +6,25 @@ import pool from "../config/db.js";
 
 export const getHomepageCollections = async () => {
   try {
-
     const query = `
       SELECT
-  id,
-  name,
-  slug
-FROM collections
-ORDER BY name ASC;
+        id,
+        name,
+        slug
+      FROM collections
+      ORDER BY name ASC;
     `;
 
     const result = await pool.query(query);
 
     return result.rows;
-
   } catch (error) {
-
     console.error(
       "GET HOMEPAGE COLLECTIONS ERROR:",
       error
     );
 
     throw error;
-
   }
 };
 
@@ -38,7 +34,6 @@ ORDER BY name ASC;
 
 export const getTrendingDesigns = async () => {
   try {
-
     const query = `
       SELECT
         d.id,
@@ -48,7 +43,21 @@ export const getTrendingDesigns = async () => {
         d.seo_title,
         d.seo_description,
 
-        MIN(pv.price) AS starting_price
+        MIN(pv.price) AS starting_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.price
+          END
+        ) AS hero_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.id
+          END
+        ) AS hero_variant_id
 
       FROM designs d
 
@@ -69,16 +78,13 @@ export const getTrendingDesigns = async () => {
     const result = await pool.query(query);
 
     return result.rows;
-
   } catch (error) {
-
     console.error(
       "GET TRENDING DESIGNS ERROR:",
       error
     );
 
     throw error;
-
   }
 };
 
@@ -88,7 +94,6 @@ export const getTrendingDesigns = async () => {
 
 export const getLatestDrops = async () => {
   try {
-
     const query = `
       SELECT
         d.id,
@@ -98,7 +103,21 @@ export const getLatestDrops = async () => {
         d.seo_title,
         d.seo_description,
 
-        MIN(pv.price) AS starting_price
+        MIN(pv.price) AS starting_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.price
+          END
+        ) AS hero_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.id
+          END
+        ) AS hero_variant_id
 
       FROM designs d
 
@@ -119,16 +138,13 @@ export const getLatestDrops = async () => {
     const result = await pool.query(query);
 
     return result.rows;
-
   } catch (error) {
-
     console.error(
       "GET LATEST DROPS ERROR:",
       error
     );
 
     throw error;
-
   }
 };
 
@@ -138,7 +154,6 @@ export const getLatestDrops = async () => {
 
 export const getBestSellers = async () => {
   try {
-
     const query = `
       SELECT
         d.id,
@@ -148,7 +163,21 @@ export const getBestSellers = async () => {
         d.seo_title,
         d.seo_description,
 
-        MIN(pv.price) AS starting_price
+        MIN(pv.price) AS starting_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.price
+          END
+        ) AS hero_price,
+
+        MAX(
+          CASE
+            WHEN pv.is_hero = true
+            THEN pv.id
+          END
+        ) AS hero_variant_id
 
       FROM designs d
 
@@ -169,15 +198,12 @@ export const getBestSellers = async () => {
     const result = await pool.query(query);
 
     return result.rows;
-
   } catch (error) {
-
     console.error(
       "GET BEST SELLERS ERROR:",
       error
     );
 
     throw error;
-
   }
 };

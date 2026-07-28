@@ -48,6 +48,25 @@ export const getAllProducts = async () => {
 
       FROM product_variants pv
 
+INNER JOIN (
+
+    SELECT
+        design_id,
+        MAX(
+            CASE
+                WHEN is_hero = true
+                THEN id
+            END
+        ) AS hero_variant_id
+
+    FROM product_variants
+
+    GROUP BY design_id
+
+) hero
+
+ON hero.hero_variant_id = pv.id
+
       INNER JOIN designs d
         ON pv.design_id = d.id
 
@@ -64,8 +83,9 @@ export const getAllProducts = async () => {
         ON pi.product_variant_id = pv.id
 
       ORDER BY
-        pv.display_order ASC,
-        pv.id ASC;
+    pv.display_order ASC,
+    d.created_at DESC,
+    pv.id DESC;
     `;
 
     const result = await pool.query(query);
@@ -244,8 +264,27 @@ export const searchProductsByName = async (search) => {
 
       FROM product_variants pv
 
-      INNER JOIN designs d
-        ON pv.design_id = d.id
+INNER JOIN (
+
+  SELECT
+    design_id,
+    MAX(
+      CASE
+        WHEN is_hero = true
+        THEN id
+      END
+    ) AS hero_variant_id
+
+  FROM product_variants
+
+  GROUP BY design_id
+
+) hero
+
+ON hero.hero_variant_id = pv.id
+
+INNER JOIN designs d
+  ON pv.design_id = d.id
 
       LEFT JOIN product_images pi
         ON pi.product_variant_id = pv.id
@@ -316,25 +355,54 @@ export const updateProductVariant = async (
     // Variant
     // -----------------------
 
-    await client.query(
+    // -----------------------
+// Hero Variant Integrity
+// -----------------------
 
-      `
-      UPDATE product_variants
-      SET
-        sku = $1,
-        price = $2,
-        is_hero = $3
-      WHERE id = $4
-      `,
+const variantResult = await client.query(
+  `
+  SELECT design_id
+  FROM product_variants
+  WHERE id = $1
+  `,
+  [id]
+);
 
-      [
-        data.sku,
-        data.price,
-        data.is_hero,
-        id,
-      ]
+if (variantResult.rows.length === 0) {
+  throw new Error("Variant not found");
+}
 
-    );
+const designId = variantResult.rows[0].design_id;
+
+// If this variant becomes Hero,
+// remove Hero from every other variant.
+if (data.is_hero) {
+  await client.query(
+    `
+    UPDATE product_variants
+    SET is_hero = false
+    WHERE design_id = $1
+    `,
+    [designId]
+  );
+}
+
+await client.query(
+  `
+  UPDATE product_variants
+  SET
+    sku = $1,
+    price = $2,
+    is_hero = $3
+  WHERE id = $4
+  `,
+  [
+    data.sku,
+    data.price,
+    data.is_hero,
+    id,
+  ]
+);
 
     // -----------------------
     // Images
@@ -474,6 +542,42 @@ export const createVariant = async (data) => {
     // Product Variant
     // -----------------------
 
+    // -----------------------
+// Hero Variant Integrity
+// -----------------------
+
+let isHero = data.is_hero;
+
+const heroCheck = await client.query(
+  `
+  SELECT id
+  FROM product_variants
+  WHERE design_id = $1
+    AND is_hero = true
+  LIMIT 1
+  `,
+  [data.design_id]
+);
+
+// If no Hero exists yet,
+// automatically make this variant the Hero.
+if (heroCheck.rows.length === 0) {
+  isHero = true;
+}
+
+// If this variant is becoming Hero,
+// remove Hero from every other variant.
+if (isHero) {
+  await client.query(
+    `
+    UPDATE product_variants
+    SET is_hero = false
+    WHERE design_id = $1
+    `,
+    [data.design_id]
+  );
+}
+
     const variantResult = await client.query(
 
       `
@@ -502,7 +606,7 @@ export const createVariant = async (data) => {
         data.sku,
         data.price,
         data.qikink_product_id || null,
-        data.is_hero,
+        isHero,
         0,
       ]
 
