@@ -3,10 +3,14 @@ import pool from "../config/db.js";
 // =====================================
 // GET ALL PRODUCTS
 // =====================================
+
 export const getAllProducts = async () => {
+
   try {
+
     const query = `
       SELECT
+
         pv.id,
         pv.design_id,
         pv.garment_type_id,
@@ -35,37 +39,163 @@ export const getAllProducts = async () => {
         clr.slug AS color_slug,
         clr.hex_code,
 
-        pi.main_image,
-        pi.image_2,
-        pi.image_3,
-        pi.image_4,
-        pi.image_5,
-        pi.image_6,
-        pi.banner_image,
-
         gt.gender_visibility,
-        gt.hero_type
+        gt.hero_type,
+
+        /* =====================================
+           NEW MEDIA ENGINE
+           ===================================== */
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'mg'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS main_image,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'f'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_2,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'b'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_3,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'l'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_4,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'r'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_5,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'cu'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_6,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'ls'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS lifestyle_image,
+
+        /* =====================================
+           COMPLETE GALLERY
+           ===================================== */
+
+        (
+          SELECT
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', pa.id,
+                  'url', pa.file_url,
+                  'fileName', pa.file_name,
+                  'imageType', it.code,
+                  'imageTypeName', it.name,
+                  'displayOrder', pa.display_order,
+                  'sequenceNumber', pa.sequence_number,
+                  'isPrimary', pa.is_primary
+                )
+                ORDER BY
+                  pa.display_order ASC,
+                  pa.id ASC
+              ),
+              '[]'::json
+            )
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+        ) AS gallery
 
       FROM product_variants pv
 
-INNER JOIN (
+      INNER JOIN (
 
-    SELECT
-        design_id,
-        MAX(
+        SELECT
+          design_id,
+
+          MAX(
             CASE
-                WHEN is_hero = true
-                THEN id
+              WHEN is_hero = true
+              THEN id
             END
-        ) AS hero_variant_id
+          ) AS hero_variant_id
 
-    FROM product_variants
+        FROM product_variants
 
-    GROUP BY design_id
+        GROUP BY design_id
 
-) hero
+      ) hero
 
-ON hero.hero_variant_id = pv.id
+        ON hero.hero_variant_id = pv.id
 
       INNER JOIN designs d
         ON pv.design_id = d.id
@@ -79,32 +209,41 @@ ON hero.hero_variant_id = pv.id
       INNER JOIN colors clr
         ON pv.color_id = clr.id
 
-      LEFT JOIN product_images pi
-        ON pi.product_variant_id = pv.id
-
       ORDER BY
-    pv.display_order ASC,
-    d.created_at DESC,
-    pv.id DESC;
+        pv.display_order ASC,
+        d.created_at DESC,
+        pv.id DESC;
     `;
 
-    const result = await pool.query(query);
+    const result =
+      await pool.query(query);
 
     return result.rows;
 
   } catch (error) {
-    console.error("GET ALL PRODUCTS ERROR:", error);
+
+    console.error(
+      "GET ALL PRODUCTS ERROR:",
+      error
+    );
+
     throw error;
+
   }
+
 };
 
 // =====================================
 // GET SINGLE PRODUCT
 // =====================================
+
 export const getProductById = async (id) => {
+
   try {
+
     const query = `
       SELECT
+
         pv.id,
         pv.design_id,
         pv.garment_type_id,
@@ -134,16 +273,141 @@ export const getProductById = async (id) => {
         clr.slug AS color_slug,
         clr.hex_code,
 
-        pi.main_image,
-        pi.image_2,
-        pi.image_3,
-        pi.image_4,
-        pi.image_5,
-        pi.image_6,
-        pi.banner_image,
-
         gt.gender_visibility,
-        gt.hero_type
+        gt.hero_type,
+
+        /* =====================================
+           NEW MEDIA ENGINE
+           ===================================== */
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'mg'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS main_image,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'f'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_2,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'b'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_3,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'l'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_4,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'r'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_5,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'cu'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS image_6,
+
+        (
+          SELECT pa.file_url
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+            AND it.code = 'ls'
+          ORDER BY
+            pa.display_order ASC,
+            pa.id ASC
+          LIMIT 1
+        ) AS lifestyle_image,
+
+        /* =====================================
+           COMPLETE GALLERY
+           ===================================== */
+
+        (
+          SELECT
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', pa.id,
+                  'url', pa.file_url,
+                  'fileName', pa.file_name,
+                  'imageType', it.code,
+                  'imageTypeName', it.name,
+                  'displayOrder', pa.display_order,
+                  'sequenceNumber', pa.sequence_number,
+                  'isPrimary', pa.is_primary
+                )
+                ORDER BY
+                  pa.display_order ASC,
+                  pa.id ASC
+              ),
+              '[]'::json
+            )
+          FROM product_assets pa
+          INNER JOIN image_types it
+            ON pa.image_type_id = it.id
+          WHERE
+            pa.product_variant_id = pv.id
+        ) AS gallery
 
       FROM product_variants pv
 
@@ -159,20 +423,28 @@ export const getProductById = async (id) => {
       INNER JOIN colors clr
         ON pv.color_id = clr.id
 
-      LEFT JOIN product_images pi
-        ON pi.product_variant_id = pv.id
-
       WHERE pv.id = $1;
     `;
 
-    const result = await pool.query(query, [id]);
+    const result =
+      await pool.query(
+        query,
+        [id]
+      );
 
     return result.rows[0];
 
   } catch (error) {
-    console.error("GET PRODUCT ERROR:", error);
+
+    console.error(
+      "GET PRODUCT ERROR:",
+      error
+    );
+
     throw error;
+
   }
+
 };
 
 // =====================================
@@ -616,43 +888,6 @@ if (isHero) {
       variantResult.rows[0].id;
 
     // -----------------------
-    // Images
-    // -----------------------
-
-    await client.query(
-
-      `
-      INSERT INTO product_images
-      (
-        product_variant_id,
-        main_image,
-        image_2,
-        image_3,
-        image_4,
-        image_5,
-        image_6,
-        banner_image
-      )
-      VALUES
-      (
-        $1,$2,$3,$4,$5,$6,$7,$8
-      )
-      `,
-
-      [
-        variantId,
-        data.main_image,
-        data.image_2,
-        data.image_3,
-        data.image_4,
-        data.image_5,
-        data.image_6,
-        data.banner_image,
-      ]
-
-    );
-
-    // -----------------------
     // Sizes
     // -----------------------
 
@@ -722,6 +957,136 @@ if (isHero) {
       id: variantId,
 
     };
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
+
+};
+
+// =====================================
+// GET PRODUCT VARIANT BY ID
+// =====================================
+
+export const getProductVariantById = async (id) => {
+
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      design_id,
+      garment_type_id,
+      color_id,
+      sku,
+      price,
+      is_hero
+    FROM product_variants
+    WHERE id = $1
+    LIMIT 1;
+    `,
+    [id]
+  );
+
+  return result.rows[0] || null;
+
+};
+
+// =====================================
+// DELETE PRODUCT VARIANT
+// =====================================
+
+export const deleteProductVariant = async (
+  id
+) => {
+
+  const client = await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // -----------------------
+    // Check Variant Exists
+    // -----------------------
+
+    const variant = await client.query(
+      `
+      SELECT id
+      FROM product_variants
+      WHERE id = $1
+      LIMIT 1;
+      `,
+      [id]
+    );
+
+    if (variant.rows.length === 0) {
+
+      throw new Error(
+        "Variant not found."
+      );
+
+    }
+
+    // -----------------------
+    // Delete Sizes
+    // -----------------------
+
+    await client.query(
+      `
+      DELETE FROM product_sizes
+      WHERE product_variant_id = $1;
+      `,
+      [id]
+    );
+
+    // -----------------------
+    // Delete Assets
+    // -----------------------
+
+    await client.query(
+      `
+      DELETE FROM product_assets
+      WHERE product_variant_id = $1;
+      `,
+      [id]
+    );
+
+    // -----------------------
+    // Delete Legacy Images
+    // (temporary until migration)
+    // -----------------------
+
+    await client.query(
+      `
+      DELETE FROM product_images
+      WHERE product_variant_id = $1;
+      `,
+      [id]
+    );
+
+    // -----------------------
+    // Delete Variant
+    // -----------------------
+
+    await client.query(
+      `
+      DELETE FROM product_variants
+      WHERE id = $1;
+      `,
+      [id]
+    );
+
+    await client.query("COMMIT");
+
+    return true;
 
   } catch (error) {
 

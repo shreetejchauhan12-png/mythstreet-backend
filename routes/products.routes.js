@@ -11,6 +11,7 @@ import {
   searchProducts,
   editProduct,
   createProductVariant,
+  deleteProduct,
 } from "../controllers/products.controller.js";
 
 import {
@@ -105,5 +106,8 @@ router.get("/:id", (req, res, next) => {
 
 // UPDATE PRODUCT VARIANT
 router.put("/:id", editProduct);
+
+// DELETE PRODUCT VARIANT
+router.delete("/:id", deleteProduct);
 
 export default router;

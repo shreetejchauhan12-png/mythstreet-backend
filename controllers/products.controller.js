@@ -6,6 +6,7 @@ import {
   getProductSizes,
   updateProductVariant,
   createVariant,
+  deleteProductVariant,
 } from "../services/products.service.js";
 
 // =====================================
@@ -230,6 +231,47 @@ export const createProductVariant = async (
 
     console.error(
       "CREATE PRODUCT VARIANT ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: error.message,
+
+    });
+
+  }
+};
+
+// =====================================
+// DELETE PRODUCT VARIANT
+// =====================================
+
+export const deleteProduct = async (
+  req,
+  res
+) => {
+  try {
+
+    const { id } = req.params;
+
+    await deleteProductVariant(id);
+
+    return res.status(200).json({
+
+      success: true,
+
+      message:
+        "Variant deleted successfully",
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "DELETE PRODUCT ERROR:",
       error
     );
 

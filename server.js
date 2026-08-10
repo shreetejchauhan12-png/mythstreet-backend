@@ -11,6 +11,15 @@ import orderRoutes from "./routes/order.js";
 import authRoutes from "./routes/auth.js";
 import lookupsRoutes from "./routes/lookups.routes.js";
 import homepageRoutes from "./routes/homepage.routes.js";
+import productsV2Routes from "./v2/routes/products-v2.routes.js";
+import adminProductRoutes from "./admin/routes/admin-product.routes.js";
+
+// =====================================
+// ASSET ENGINE
+// =====================================
+
+import uploadRoutes from "./assets/routes/upload.routes.js";
+import assetRoutes from "./assets/routes/asset.routes.js";
 
 import { sendEmail } from "./utils/sendEmail.js";
 
@@ -35,9 +44,15 @@ console.log(
   process.env.RESEND_API_KEY ? "FOUND ✅" : "MISSING ❌"
 );
 
-if (!process.env.RESEND_API_KEY) {
-  console.error("❌ RESEND_API_KEY is missing in .env");
-}
+console.log(
+  "R2_ENDPOINT:",
+  process.env.R2_ENDPOINT ? "FOUND ✅" : "MISSING ❌"
+);
+
+console.log(
+  "R2_BUCKET_NAME:",
+  process.env.R2_BUCKET_NAME ? "FOUND ✅" : "MISSING ❌"
+);
 
 // ==============================
 // MIDDLEWARE
@@ -55,19 +70,49 @@ app.use(express.json());
 // ROUTES
 // ==============================
 
-app.use("/api/products", (req, res, next) => {
+app.use(
+  "/api/products",
+  (req, res, next) => {
+    console.log("➡️", req.method, req.originalUrl);
+    next();
+  },
+  productsRoutes
+);
 
-  console.log("➡️", req.method, req.originalUrl);
-
-  next();
-
-}, productsRoutes);
 app.use("/api/designs", designsRoutes);
+
 app.use("/api/collections", collectionsRoutes);
+
 app.use("/api/order", orderRoutes);
+
 app.use("/api/auth", authRoutes);
+
 app.use("/api/lookups", lookupsRoutes);
+
 app.use("/api/homepage", homepageRoutes);
+
+app.use(
+  "/api/products-v2",
+  productsV2Routes
+);
+
+app.use(
+  "/api/admin",
+  adminProductRoutes
+);
+
+// =====================================
+// ASSET ENGINE ROUTES
+// =====================================
+
+app.use(
+  "/api/assets/upload",
+  uploadRoutes
+);
+app.use(
+  "/api/assets",
+  assetRoutes
+);
 
 // ==============================
 // HEALTH CHECK
@@ -125,6 +170,7 @@ app.use((err, req, res, next) => {
   console.error("❌ GLOBAL ERROR:", err);
 
   res.status(500).json({
+    success: false,
     error: "Internal Server Error",
     details: err.message,
   });
