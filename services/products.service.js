@@ -39,9 +39,6 @@ export const getAllProducts = async () => {
         clr.slug AS color_slug,
         clr.hex_code,
 
-        gt.gender_visibility,
-        gt.hero_type,
-
         /* =====================================
            NEW MEDIA ENGINE
            ===================================== */
@@ -273,8 +270,6 @@ export const getProductById = async (id) => {
         clr.slug AS color_slug,
         clr.hex_code,
 
-        gt.gender_visibility,
-        gt.hero_type,
 
         /* =====================================
            NEW MEDIA ENGINE
