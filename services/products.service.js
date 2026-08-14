@@ -203,7 +203,7 @@ export const getAllProducts = async () => {
       INNER JOIN collections c
         ON d.collection_id = c.id
 
-      INNER JOIN garment_types gt
+      INNER JOIN garments gt
         ON pv.garment_type_id = gt.id
 
       INNER JOIN colors clr
@@ -417,7 +417,7 @@ export const getProductById = async (id) => {
       INNER JOIN collections c
         ON d.collection_id = c.id
 
-      INNER JOIN garment_types gt
+      INNER JOIN garments gt
         ON pv.garment_type_id = gt.id
 
       INNER JOIN colors clr
@@ -487,7 +487,7 @@ export const getVariantsByDesign = async (designId) => {
       INNER JOIN designs d
         ON pv.design_id = d.id
 
-      INNER JOIN garment_types gt
+      INNER JOIN garments gt
         ON pv.garment_type_id = gt.id
 
       INNER JOIN colors clr

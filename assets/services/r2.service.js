@@ -14,33 +14,22 @@ export async function uploadToR2({
   body,
   contentType,
 }) {
-
   const command = new PutObjectCommand({
-
-    Bucket:
-      process.env.R2_BUCKET_NAME,
-
+    Bucket: process.env.R2_BUCKET_NAME,
     Key: key,
-
     Body: body,
-
     ContentType: contentType,
-
   });
 
   await r2.send(command);
 
+  const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
   return {
-
     success: true,
-
     key,
-
-    url:
-      `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET_NAME}/${key}`,
-
+    url: publicUrl,
   };
-
 }
 
 // =====================================
@@ -48,21 +37,14 @@ export async function uploadToR2({
 // =====================================
 
 export async function deleteFromR2(key) {
-
   if (!key) {
     return;
   }
 
-  const command =
-    new DeleteObjectCommand({
-
-      Bucket:
-        process.env.R2_BUCKET_NAME,
-
-      Key: key,
-
-    });
+  const command = new DeleteObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+  });
 
   await r2.send(command);
-
 }
